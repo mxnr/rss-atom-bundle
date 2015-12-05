@@ -9,6 +9,7 @@
  */
 namespace Debril\RssAtomBundle\Protocol\Parser;
 
+use Debril\RssAtomBundle\Exception\ParserException;
 use Debril\RssAtomBundle\Protocol\FeedInterface;
 use Debril\RssAtomBundle\Protocol\ItemInInterface;
 use Debril\RssAtomBundle\Protocol\Parser;
@@ -79,6 +80,8 @@ class AtomParser extends Parser
             $item->setAdditional($this->getAdditionalNamespacesElements($xmlElement, $namespaces));
             $this->handleEnclosure($xmlElement, $item);
 
+            $this->parseCategories($xmlElement, $item);
+
             $this->addValidItem($feed, $item, $filters);
         }
 
@@ -138,7 +141,7 @@ class AtomParser extends Parser
      * Handles enclosures if any.
      *
      * @param SimpleXMLElement $element
-     * @param ItemInInterface           $item
+     * @param ItemInInterface  $item
      *
      * @return $this
      */
@@ -152,5 +155,22 @@ class AtomParser extends Parser
         }
 
         return $this;
+    }
+
+    /**
+     * Parse category elements.
+     * We may have more than one.
+     *
+     * @param SimpleXMLElement $element
+     * @param ItemInInterface $item
+     */
+    protected function parseCategories(SimpleXMLElement $element, ItemInInterface $item)
+    {
+        foreach ($element->category as $xmlCategory) {
+            $category = new Category();
+            $category->setName($this->getAttributeValue($xmlCategory, 'term'));
+
+            $item->addCategory($category);
+        }
     }
 }

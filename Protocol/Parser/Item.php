@@ -10,6 +10,7 @@
 namespace Debril\RssAtomBundle\Protocol\Parser;
 
 use DateTime;
+use Debril\RssAtomBundle\Protocol\CategoryInInterface;
 use Debril\RssAtomBundle\Protocol\ItemInInterface;
 use Debril\RssAtomBundle\Protocol\ItemOutInterface;
 
@@ -89,12 +90,21 @@ class Item implements ItemInInterface, ItemOutInterface
     protected $additional;
 
     /**
-     * @var ArrayIterator
+     * @var \ArrayIterator
      */
     protected $medias;
 
+    /**
+     * @var Category[]
+     */
+    protected $categories;
+
+    /**
+     * Constructor.
+     */
     public function __construct()
     {
+        $this->categories = array();
         $this->medias = new \ArrayIterator();
     }
 
@@ -115,7 +125,7 @@ class Item implements ItemInInterface, ItemOutInterface
      *
      * @param string $title
      *
-     * @return \Debril\RssAtomBundle\Protocol\Parser\Item
+     * @return Item
      */
     public function setTitle($title)
     {
@@ -141,7 +151,7 @@ class Item implements ItemInInterface, ItemOutInterface
      *
      * @param string $publicId
      *
-     * @return \Debril\RssAtomBundle\Protocol\Parser\Item
+     * @return Item
      */
     public function setPublicId($publicId)
     {
@@ -167,7 +177,7 @@ class Item implements ItemInInterface, ItemOutInterface
      *
      * @param string $description
      *
-     * @return \Debril\RssAtomBundle\Protocol\Parser\Item
+     * @return Item
      */
     public function setDescription($description)
     {
@@ -191,7 +201,7 @@ class Item implements ItemInInterface, ItemOutInterface
      *
      * @param string $summary
      *
-     * @return \Debril\RssAtomBundle\Protocol\Parser\Item
+     * @return Item
      */
     public function setSummary($summary)
     {
@@ -217,7 +227,7 @@ class Item implements ItemInInterface, ItemOutInterface
      *
      * @param \DateTime $updated
      *
-     * @return \Debril\RssAtomBundle\Protocol\Parser\Item
+     * @return Item
      */
     public function setUpdated(DateTime $updated)
     {
@@ -243,7 +253,7 @@ class Item implements ItemInInterface, ItemOutInterface
      *
      * @param string $link
      *
-     * @return \Debril\RssAtomBundle\Protocol\Parser\Item
+     * @return Item
      */
     public function setLink($link)
     {
@@ -269,7 +279,7 @@ class Item implements ItemInInterface, ItemOutInterface
      *
      * @param string $author
      *
-     * @return \Debril\RssAtomBundle\Protocol\Parser\Item
+     * @return Item
      */
     public function setAuthor($author)
     {
@@ -293,7 +303,7 @@ class Item implements ItemInInterface, ItemOutInterface
      *
      * @param string $comment
      *
-     * @return \Debril\RssAtomBundle\Protocol\Parser\Item
+     * @return Item
      */
     public function setComment($comment)
     {
@@ -342,5 +352,25 @@ class Item implements ItemInInterface, ItemOutInterface
     public function getMedias()
     {
         return $this->medias;
+    }
+
+    /**
+     * @param CategoryInInterface $category
+     *
+     * @return $this
+     */
+    public function addCategory(CategoryInInterface $category)
+    {
+        $this->categories[] = $category;
+
+        return $this;
+    }
+
+    /**
+     * @return Category[]
+     */
+    public function getCategories()
+    {
+        return $this->categories;
     }
 }

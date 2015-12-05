@@ -2,14 +2,17 @@
 
 namespace Debril\RssAtomBundle\Controller;
 
+use Debril\RssAtomBundle\Protocol\FeedFormatter;
+use Debril\RssAtomBundle\Protocol\FeedOutInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use Debril\RssAtomBundle\Provider\FeedContentProviderInterface;
-use Debril\RssAtomBundle\Exception\FeedNotFoundException;
+use Debril\RssAtomBundle\Exception\FeedException\FeedNotFoundException;
 
+/**
+ * Class StreamController.
+ */
 class StreamController extends Controller
 {
     /**
@@ -29,16 +32,20 @@ class StreamController extends Controller
     protected $since;
 
     /**
-     * @Route("/stream/{id}")
-     * @Template()
+     * @param Request $request
+     *
+     * @return Response
      */
     public function indexAction(Request $request)
     {
         $options = $request->attributes->get('_route_params');
+        $this->setModifiedSince($request);
         $options['Since'] = $this->getModifiedSince();
 
         return $this->createStreamResponse(
-                        $options, $request->get('format', 'rss'), $request->get('source', self::DEFAULT_SOURCE)
+            $options,
+            $request->get('format', 'rss'),
+            $request->get('source', self::DEFAULT_SOURCE)
         );
     }
 
@@ -50,16 +57,28 @@ class StreamController extends Controller
     protected function getModifiedSince()
     {
         if (is_null($this->since)) {
-            if ($this->getRequest()->headers->has('If-Modified-Since')) {
-                $string = $this->getRequest()->headers->get('If-Modified-Since');
-                $this->since = \DateTime::createFromFormat(\DateTime::RSS, $string);
-            } else {
-                $this->since = new \DateTime();
-                $this->since->setTimestamp(1);
-            }
+            $this->since = new \DateTime('@0');
         }
 
         return $this->since;
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return $this
+     */
+    protected function setModifiedSince(Request $request)
+    {
+        $this->since = new \DateTime();
+        if ($request->headers->has('If-Modified-Since')) {
+            $string = $request->headers->get('If-Modified-Since');
+            $this->since = \DateTime::createFromFormat(\DateTime::RSS, $string);
+        } else {
+            $this->since->setTimestamp(1);
+        }
+
+        return $this;
     }
 
     /**
@@ -67,7 +86,7 @@ class StreamController extends Controller
      * 200 : a full body containing the stream
      * 304 : Not modified.
      *
-     * @param array  $options
+     * @param array $options
      * @param $format
      * @param string $source
      *
@@ -84,7 +103,10 @@ class StreamController extends Controller
             $response = new Response($formatter->toString($content));
             $response->headers->set('Content-Type', 'application/xhtml+xml');
 
-            $response->setPublic();
+            if (! $this->container->getParameter('debril_rss_atom.private_feeds')) {
+                $response->setPublic();
+            }
+
             $response->setMaxAge(3600);
             $response->setLastModified($content->getLastModified());
         } else {
@@ -100,10 +122,10 @@ class StreamController extends Controller
      * The FeedContentProviderInterface instance is provided as a service
      * default : debril.provider.service.
      *
-     * @param \Symfony\Component\OptionsResolver\Options $options
-     * @param string                                     $source
+     * @param array  $options
+     * @param string $source
      *
-     * @return \Debril\RssAtomBundle\Protocol\FeedOutInterface
+     * @return FeedOutInterface
      *
      * @throws \Exception
      */
@@ -143,7 +165,7 @@ class StreamController extends Controller
      *
      * @throws \Exception
      *
-     * @return \Debril\RssAtomBundle\Protocol\FeedFormatter
+     * @return FeedFormatter
      */
     protected function getFormatter($format)
     {

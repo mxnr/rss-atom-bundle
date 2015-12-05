@@ -36,8 +36,8 @@ class FeedRssFormatter extends FeedFormatter
     }
 
     /**
-     * @param \DomDocument $document
-     * @param FeedOutInterface      $content
+     * @param \DomDocument     $document
+     * @param FeedOutInterface $content
      */
     public function setMetas(\DOMDocument $document, FeedOutInterface $content)
     {
@@ -55,8 +55,8 @@ class FeedRssFormatter extends FeedFormatter
     }
 
     /**
-     * @param \DomDocument $document
-     * @param ItemOutInterface      $item
+     * @param \DomDocument     $document
+     * @param ItemOutInterface $item
      */
     protected function addEntry(\DomDocument $document, ItemOutInterface $item)
     {
@@ -70,6 +70,29 @@ class FeedRssFormatter extends FeedFormatter
         $elements[] = $document->createElement('pubDate', $item->getUpdated()->format(\DateTime::RSS));
         $elements[] = $document->createElement('comments', $item->getComment());
         $elements[] = $document->createElement('description', htmlspecialchars($item->getDescription(), ENT_COMPAT, 'UTF-8'));
+
+        $mediaCount = 0;
+        foreach ($item->getMedias() as $media) {
+            // We can have only one enclosure in RSS 2.0
+            // We use as a fallback Yahoo RSS Media extension
+            if (0 === $mediaCount) {
+                $mediaElement = $document->createElement('enclosure');
+                $mediaElement->setAttribute('url', $media->getUrl());
+                $mediaElement->setAttribute('length', $media->getLength());
+                $mediaElement->setAttribute('type', $media->getType());
+            }
+
+            $mediaElement = $document->createElement('media:content');
+            $mediaElement->setAttribute('url', $media->getUrl());
+            $mediaElement->setAttribute('fileSize', $media->getLength());
+            $mediaElement->setAttribute('type', $media->getType());
+            $mediaElement->setAttribute('xmlns:media', 'http://search.yahoo.com/mrss/');
+
+
+            $elements[] = $mediaElement;
+
+            $mediaCount++;
+        }
 
         if (!is_null($item->getAuthor())) {
             $elements[] = $document->createElement('author', $item->getAuthor());

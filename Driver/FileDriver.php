@@ -9,6 +9,8 @@
  */
 namespace Debril\RssAtomBundle\Driver;
 
+use Debril\RssAtomBundle\Exception\DriverUnreachableResourceException;
+
 /**
  * Class FileDriver.
  */
@@ -18,7 +20,7 @@ class FileDriver implements HttpDriverInterface
      * @param string    $url
      * @param \DateTime $lastModified
      *
-     * @return \Debril\RssAtomBundle\Driver\HttpDriverResponse
+     * @return HttpDriverResponse
      *
      * @throws DriverUnreachableResourceException
      */

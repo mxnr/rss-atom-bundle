@@ -10,8 +10,10 @@
 namespace Debril\RssAtomBundle\Exception;
 
 /**
- * Class FeedNotModifiedException.
+ * Class RssAtomException.
+ *
+ * @author Sullivan Senechal <soullivaneuh@gmail.com>
  */
-class FeedNotModifiedException extends \Exception
+class RssAtomException extends \RuntimeException
 {
 }

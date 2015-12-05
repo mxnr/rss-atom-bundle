@@ -1,5 +1,6 @@
 RssAtomBundle - Read and Build Atom/RSS feeds
 =============================================
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/9e0b1301-d7a5-49fd-916b-49da544389ac/big.png)](https://insight.sensiolabs.com/projects/9e0b1301-d7a5-49fd-916b-49da544389ac)
 [![Latest Stable Version](https://poser.pugx.org/debril/rss-atom-bundle/v/stable.png)](https://packagist.org/packages/debril/rss-atom-bundle)
 [![Build Status](https://secure.travis-ci.org/alexdebril/rss-atom-bundle.png?branch=master)](http://travis-ci.org/alexdebril/rss-atom-bundle)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/alexdebril/rss-atom-bundle/badges/quality-score.png?s=6e4cc3b9368ddbf14b1066114b6af6d9011894d9)](https://scrutinizer-ci.com/g/alexdebril/rss-atom-bundle/)
@@ -8,13 +9,14 @@ RssAtomBundle - Read and Build Atom/RSS feeds
 RssAtomBundle is a Bundle for Symfony 2 made to easily access and deliver RSS / Atom feeds. It features:
 
 - Detection of the feed format (RSS / Atom)
+- enclosures support
 - A generic StreamController built to write all your feeds. This controller is able to send a 304 HTTP Code if the feed didn't change since the last visit
 - HTTP Headers support when reading feeds in order to save network traffic
 - Content filtering to fetch only the newest items
 - multiple feeds writing
 - Ability to use doctrine as a data source
 
-Keep informed about about new releases and incoming features : http://blog.debril.fr/category/rss-atom-bundle
+Keep informed about about new releases and incoming features : http://debril.org/category/rss-atom-bundle
 
 All classes are heavily tested using PHPUnit.
 
@@ -32,13 +34,13 @@ Installation in a Symfony 2 project
 This is the most common way if you want to add RssAtomBundle into an existing project.
 Edit composer.json and add the following line in the "require" section:
 
-    "debril/rss-atom-bundle": "1.5"
+    "debril/rss-atom-bundle": "2.2"
 
-then, ask Composer to install it:
+Ask Composer to install it:
 
     composer.phar update debril/rss-atom-bundle
     
-finally, edit your app/AppKernel.php to register the bundle in the registerBundles() method as above:
+Edit your app/AppKernel.php to register the bundle in the registerBundles() method as above:
 
 
 ```php
@@ -54,14 +56,13 @@ class AppKernel extends Kernel
             new Debril\RssAtomBundle\DebrilRssAtomBundle(),
 ```
 
-Compatibility between 1.1.6 and 1.2.0
------------------------------
+Then add the bundle's routing configuration in app/config/routing.yml :
+ 
+```yaml
+feedio:
+    resource: @DebrilRssAtomBundle/Resources/config/routing.xml
 
-If you are already using rss-atom-bundle, beware that the 1.2.0 version breaks some backward compatibility. If you do not need the improvements provided by the 1.2.0 version, please edit composer.json as below :
-
-    "debril/rss-atom-bundle": "~1.1.0"
-
-The migration process is described in the [migrations section](https://github.com/alexdebril/rss-atom-bundle/wiki/Migrations)
+```
 
 Fetching the repository
 -----------------------
@@ -115,6 +116,12 @@ Wherever you have access to the service container :
 
     // the $content object contains as many Item instances as you have fresh articles in the feed
     $items = $feed->getItems();
+
+    foreach ( $items as $item ) {
+        // getMedias() returns enclosures if any
+        $medias = $item->getMedias();
+    }
+
 ?>
 ```
 `getFeedContent()` fetches the feed hosted at `$url` and removes items prior to `$date`. If it is the first time you read this feed, then you must specify a date far enough in the past to keep all the items. This method does not loop until the `$date` is reached, it justs performs one hit and filters the response to keep only the fresh articles.
@@ -216,6 +223,18 @@ Need to keep the existing routes and add one mapped to a different FeedProvider 
 ```
 
 The `source` parameter must contain a valid service name defined in your application.
+
+Private feeds
+-------------
+
+You may have private feeds, user-specific or behind some authentication.  
+In that case, you don't want to `Cache-Control: public` header to be added, not to have your feed cached by a reverse-proxy (such as Symfony2 AppCache or Varnish).  
+You can do so by setting `private` parameter to `true` in config:
+
+```yml
+debril_rss_atom:
+    private: true
+```
 
 Contributors
 ------------

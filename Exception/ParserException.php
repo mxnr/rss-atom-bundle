@@ -7,12 +7,11 @@
  * @license http://opensource.org/licenses/lgpl-3.0.html LGPL
  * @copyright (c) 2013, Alexandre Debril
  */
-namespace Debril\RssAtomBundle\Driver;
+namespace Debril\RssAtomBundle\Exception;
 
 /**
- * Class DriverUnreachableResourceException.
+ * Class ParserException.
  */
-class DriverUnreachableResourceException extends \Exception
+class ParserException extends RssAtomException
 {
-    //put your code here
 }

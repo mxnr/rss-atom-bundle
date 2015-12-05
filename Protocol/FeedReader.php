@@ -14,12 +14,12 @@ use SimpleXMLElement;
 use Debril\RssAtomBundle\Driver\HttpDriverInterface;
 use Debril\RssAtomBundle\Driver\HttpDriverResponse;
 use Debril\RssAtomBundle\Protocol\Parser\Factory;
-use Debril\RssAtomBundle\Protocol\Parser\ParserException;
-use Debril\RssAtomBundle\Exception\FeedCannotBeReadException;
-use Debril\RssAtomBundle\Exception\FeedNotFoundException;
-use Debril\RssAtomBundle\Exception\FeedNotModifiedException;
-use Debril\RssAtomBundle\Exception\FeedServerErrorException;
-use Debril\RssAtomBundle\Exception\FeedForbiddenException;
+use Debril\RssAtomBundle\Exception\ParserException;
+use Debril\RssAtomBundle\Exception\FeedException\FeedCannotBeReadException;
+use Debril\RssAtomBundle\Exception\FeedException\FeedNotFoundException;
+use Debril\RssAtomBundle\Exception\FeedException\FeedNotModifiedException;
+use Debril\RssAtomBundle\Exception\FeedException\FeedServerErrorException;
+use Debril\RssAtomBundle\Exception\FeedException\FeedForbiddenException;
 
 /**
  * Class to read any kind of supported feeds (RSS, ATOM, and more if you need).
@@ -52,30 +52,26 @@ use Debril\RssAtomBundle\Exception\FeedForbiddenException;
  * }
  * </code>
  */
-
-/**
- * Class FeedReader.
- */
 class FeedReader
 {
     /**
-     * @var array[\Debril\RssAtomBundle\Protocol\Parser]
+     * @var Parser[]
      */
     protected $parsers = array();
 
     /**
-     * @var \Debril\RssAtomBundle\Driver\HttpDriverInterface
+     * @var HttpDriverInterface
      */
     protected $driver = null;
 
     /**
-     * @var \Debril\RssAtomBundle\Protocol\Parser\Factory
+     * @var Factory
      */
     protected $factory = null;
 
     /**
-     * @param \Debril\RssAtomBundle\Driver\HttpDriverInterface       $driver
-     * @param \Debril\RssAtomBundle\Protocol\Parser\Factory $factory
+     * @param HttpDriverInterface $driver
+     * @param Factory             $factory
      */
     public function __construct(HttpDriverInterface $driver, Factory $factory)
     {
@@ -86,9 +82,9 @@ class FeedReader
     /**
      * Add a Parser.
      *
-     * @param \Debril\RssAtomBundle\Protocol\Parser $parser
+     * @param Parser $parser
      *
-     * @return \Debril\RssAtomBundle\Protocol\FeedReader
+     * @return FeedReader
      */
     public function addParser(Parser $parser)
     {
@@ -99,7 +95,7 @@ class FeedReader
     }
 
     /**
-     * @return \Debril\RssAtomBundle\Driver\HttpDriverInterface
+     * @return HttpDriverInterface
      */
     public function getDriver()
     {
@@ -113,7 +109,7 @@ class FeedReader
      * @param string    $url
      * @param \DateTime $arg
      *
-     * @return \Debril\RssAtomBundle\Protocol\FeedInInterface
+     * @return FeedInInterface|FeedContent
      */
     public function getFeedContent($url, $arg = null)
     {
@@ -130,7 +126,7 @@ class FeedReader
     }
 
     /**
-     * @param $url
+     * @param string    $url
      * @param array     $filters
      * @param \DateTime $modifiedSince
      *
@@ -161,11 +157,11 @@ class FeedReader
     /**
      * Read a feed using its url and hydrate the given FeedInInterface instance.
      *
-     * @param string                                $url
-     * @param \Debril\RssAtomBundle\Protocol\FeedInInterface $feed
-     * @param \DateTime                             $modifiedSince
+     * @param string          $url
+     * @param FeedInInterface $feed
+     * @param \DateTime       $modifiedSince
      *
-     * @return \Debril\RssAtomBundle\Protocol\FeedInInterface
+     * @return FeedInInterface
      */
     public function readFeed($url, FeedInInterface $feed, \DateTime $modifiedSince)
     {
@@ -198,16 +194,11 @@ class FeedReader
     /**
      * Parse the body of a feed and write it into the FeedInInterface instance.
      *
-     * @param \Debril\RssAtomBundle\Driver\HttpDriverResponse $response
-     * @param \Debril\RssAtomBundle\Protocol\FeedInInterface           $feed
+     * @param HttpDriverResponse $response
+     * @param FeedInInterface    $feed
+     * @param array              $filters
      *
      * @return FeedInInterface
-     *
-     * @throws FeedNotFoundException
-     * @throws FeedNotModifiedException
-     * @throws FeedServerErrorException
-     * @throws FeedForbiddenException
-     * @throws FeedCannotBeReadException
      */
     public function parseBody(HttpDriverResponse $response, FeedInInterface $feed, array $filters = array())
     {
@@ -220,15 +211,15 @@ class FeedReader
         }
 
         switch ($response->getHttpCode()) {
-            case HttpDriverResponse::HTTP_CODE_NOT_FOUND :
+            case HttpDriverResponse::HTTP_CODE_NOT_FOUND:
                 throw new FeedNotFoundException($response->getHttpMessage());
-            case HttpDriverResponse::HTTP_CODE_NOT_MODIFIED :
+            case HttpDriverResponse::HTTP_CODE_NOT_MODIFIED:
                 throw new FeedNotModifiedException($response->getHttpMessage());
-            case HttpDriverResponse::HTTP_CODE_SERVER_ERROR :
+            case HttpDriverResponse::HTTP_CODE_SERVER_ERROR:
                 throw new FeedServerErrorException($response->getHttpMessage());
             case HttpDriverResponse::HTTP_CODE_FORBIDDEN:
                 throw new FeedForbiddenException($response->getHttpMessage());
-            default :
+            default:
                 throw new FeedCannotBeReadException($response->getHttpMessage(), $response->getHttpCode());
         }
     }

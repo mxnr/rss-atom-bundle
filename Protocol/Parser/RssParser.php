@@ -23,8 +23,6 @@ class RssParser extends Parser
         'channel',
     );
 
-    const MEDIA_LINK_ATTIBUTE = 'link';
-
     /**
      *
      */
@@ -44,11 +42,11 @@ class RssParser extends Parser
     }
 
     /**
-     * @param SimpleXMLElement                             $xmlBody
-     * @param \Debril\RssAtomBundle\Protocol\FeedInterface $feed
-     * @param array                                        $filters
+     * @param SimpleXMLElement $xmlBody
+     * @param FeedInterface    $feed
+     * @param array            $filters
      *
-     * @return \Debril\RssAtomBundle\Protocol\FeedInterface
+     * @return FeedInterface
      */
     protected function parseBody(SimpleXMLElement $xmlBody, FeedInterface $feed, array $filters)
     {
@@ -63,25 +61,34 @@ class RssParser extends Parser
         $date = new \DateTime('now');
         foreach ($xmlBody->channel->item as $xmlElement) {
             $item = $this->newItem();
+
             if (isset($xmlElement->pubDate)) {
-                $format = isset($format) ? $format : $this->guessDateFormat($xmlElement->pubDate);
-                $date = self::convertToDateTime($xmlElement->pubDate, $format);
+                $readDate = trim($xmlElement->pubDate);
+
+                $format = isset($format) ? $format : $this->guessDateFormat($readDate);
+                $date = self::convertToDateTime($readDate, $format);
             }
+
             $item->setTitle($xmlElement->title)
                  ->setDescription($xmlElement->description)
                  ->setPublicId($xmlElement->guid)
                  ->setUpdated($date)
                  ->setLink($xmlElement->link)
-                 ->setComment($xmlElement->comments)
-                 ->setAuthor($xmlElement->author);
+                 ->setComment($xmlElement->comments);
 
             if ($date > $latest) {
                 $latest = $date;
             }
 
+            $this->parseCategories($xmlElement, $item);
+
+            $this->handleAuthor($xmlElement, $item);
+            $this->handleDescription($xmlElement, $item);
+
             $item->setAdditional($this->getAdditionalNamespacesElements($xmlElement, $namespaces));
 
             $this->handleEnclosure($xmlElement, $item);
+            $this->handleMediaExtension($xmlElement, $item);
 
             $this->addValidItem($feed, $item, $filters);
         }
@@ -108,8 +115,8 @@ class RssParser extends Parser
     }
 
     /**
-     * @param \Debril\RssAtomBundle\Protocol\FeedInterface $feed
-     * @param type                                         $rssDate
+     * @param FeedInterface $feed
+     * @param string        $rssDate
      */
     protected function setLastModified(FeedInterface $feed, $rssDate)
     {
@@ -122,7 +129,7 @@ class RssParser extends Parser
      * Handles enclosures if any.
      *
      * @param SimpleXMLElement $element
-     * @param ItemInInterface           $item
+     * @param ItemInInterface  $item
      *
      * @return $this
      */
@@ -134,5 +141,79 @@ class RssParser extends Parser
         }
 
         return $this;
+    }
+
+    /**
+     * According to RSS specs, either we can have a summary in description ;
+     * full content in description ; or a summary in description AND full content in content:encoded
+     *
+     * @param SimpleXMLElement $xmlElement
+     * @param ItemInInterface $item
+     */
+    protected function handleDescription(SimpleXMLElement $xmlElement, ItemInInterface $item)
+    {
+        $contentChild = $xmlElement->children('http://purl.org/rss/1.0/modules/content/');
+
+        if (isset($contentChild->encoded)) {
+            $item->setDescription($contentChild->encoded);
+            $item->setSummary($xmlElement->description);
+        } else {
+            $item->setDescription($xmlElement->description);
+        }
+    }
+
+    /**
+     * Parse elements from Yahoo RSS Media extension
+     *
+     * @param SimpleXMLElement $xmlElement
+     * @param ItemInInterface $item with Media added
+     */
+    protected function handleMediaExtension(SimpleXMLElement $xmlElement, ItemInInterface $item)
+    {
+        foreach ($xmlElement->children('http://search.yahoo.com/mrss/') as $xmlMedia) {
+            $media = new Media();
+            $media->setUrl($this->getAttributeValue($xmlMedia, 'url'))
+                ->setType($this->searchAttributeValue($xmlMedia, array('type', 'medium')))
+                ->setLength($this->getAttributeValue($xmlMedia, 'fileSize'))
+            ;
+
+            $item->addMedia($media);
+        }
+    }
+
+    /**
+     * Parse category elements.
+     * We may have more than one.
+     *
+     * @param SimpleXMLElement $element
+     * @param ItemInInterface $item
+     */
+    protected function parseCategories(SimpleXMLElement $element, ItemInInterface $item)
+    {
+        foreach ($element->category as $xmlCategory) {
+            $category = new Category();
+            $category->setName((string) $xmlCategory);
+
+            $item->addCategory($category);
+        }
+    }
+
+    /**
+     * Parse author:
+     * first we look at optional dc:creator, which is the author name
+     * if no, we fallback to the RSS author element which is the author email
+     *
+     * @param SimpleXMLElement $element
+     * @param ItemInInterface $item
+     */
+    protected function handleAuthor(SimpleXMLElement $element, ItemInInterface $item)
+    {
+        $dcChild = $element->children('http://purl.org/dc/elements/1.1/');
+
+        if (isset($dcChild->creator)) {
+            $item->setAuthor((string) $dcChild->creator);
+        } else {
+            $item->setAuthor((string) $element->author);
+        }
     }
 }

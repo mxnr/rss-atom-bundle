@@ -27,7 +27,7 @@ class Media
     /**
      * @var int
      */
-    protected $lenght;
+    protected $length;
 
     /**
      * @return string
@@ -72,19 +72,19 @@ class Media
     /**
      * @return string
      */
-    public function getLenght()
+    public function getLength()
     {
-        return $this->lenght;
+        return $this->length;
     }
 
     /**
-     * @param string $lenght
+     * @param string $length
      *
      * @return $this
      */
-    public function setLenght($lenght)
+    public function setLength($length)
     {
-        $this->lenght = intval($lenght);
+        $this->length = intval($length);
 
         return $this;
     }

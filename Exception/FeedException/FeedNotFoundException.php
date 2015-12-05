@@ -7,11 +7,13 @@
  * @license http://opensource.org/licenses/lgpl-3.0.html LGPL
  * @copyright (c) 2013, Alexandre Debril
  */
-namespace Debril\RssAtomBundle\Exception;
+namespace Debril\RssAtomBundle\Exception\FeedException;
+
+use Debril\RssAtomBundle\Exception\FeedException;
 
 /**
  * Class FeedNotFoundException.
  */
-class FeedNotFoundException extends \Exception
+class FeedNotFoundException extends FeedException
 {
 }
